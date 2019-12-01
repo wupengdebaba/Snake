@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html>
+<title>贪吃蛇</title>
+
+<head>
+    <style>
+        #game {
+            width: 1000px;
+            height: 600px;
+            border: 1px solid black;
+            position: relative;
+        }
+        
+        .Node {
+            width: 20px;
+            height: 20px;
+            background: gray;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game"></div>
+</body>
+
+<script>
+    // 定义一些关于游戏的全局数据变量
+    var gameWidth = 1000;
+    var gameHeight = 600;
+    var nodeSize = 20;
+    var maxX = gameWidth / nodeSize;
+    var maxY = gameHeight / nodeSize;
+
+    // 保存了每个方向上，x,y的变化量
+    var directs = [
+        [0, -1], // 上
+        [0, 1], // 下
+        [-1, 0], // 左
+        [1, 0], // 右
+    ];
+    var directUp = 0;
+    var directDown = 1;
+    var directLeft = 2;
+    var directRight = 3;
+
+
+    // Node对象代表了蛇的身体单位，它有自己的坐标(x, y)属性，
+    // 它还有一个MoveTo方法，能够将它移动到新坐标(x1, y1)上
+    // Node在页面上，通过一个div来展示
+    function Node(x, y) {
+        // 记录下坐标
+        this.x = x;
+        this.y = y;
+
+        // 创建div，并作展示
+        this.Div = document.createElement("div");
+        this.Div.className = "Node";
+        this.Div.style.left = (x * nodeSize).toString() + "px";
+        this.Div.style.top = (y * nodeSize).toString() + "px";
+        document.getElementById("game").appendChild(this.Div);
+
+        // MoveTo方法， 将此Node移动到新坐标(x1, y1)上
+        this.MoveTo = function(x1, y1) {
+            this.x = x1;
+            this.y = y1;
+            this.Div.style.left = (x1 * nodeSize).toString() + "px";
+            this.Div.style.top = (y1 * nodeSize).toString() + "px";
+        }
+    }
+
+
+
+    function Snake() {
+        this.curDirect = directDown; // 记录了当前方向
+        this.Nodes = [new Node(0, 0)]; // 蛇的身体组成，实际是一个Node数组
+
+        this.AddNode = function(node) {
+            this.Nodes.push(node);
+        }
+
+        // start 参数代表从第start个下标开始查询
+        this.OnBody = function(start, x, y) {
+            for (let i = start; i < this.Nodes.length; i++) {
+                if (x == this.Nodes[i].x && y == this.Nodes[i].y) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    var snake = new Snake();
+    var food = new getNewFood();
+
+    function getNewFood() {
+        while (true) {
+            let x = Math.floor(Math.random() * maxX);
+            let y = Math.floor(Math.random() * maxY);
+
+            // 不可以出现在蛇的身体上
+            if (snake.OnBody(0, x, y)) {
+                continue;
+            }
+
+            return new Node(x, y);
+        }
+    }
+
+    function snakeMove() {
+        // 1. 先移动身体部分
+        for (let i = snake.Nodes.length - 1; i > 0; i--) {
+            snake.Nodes[i].MoveTo(snake.Nodes[i - 1].x, snake.Nodes[i - 1].y);
+        }
+
+        // 2. 移动头结点
+        let x1 = snake.Nodes[0].x + directs[snake.curDirect][0];
+        let y1 = snake.Nodes[0].y + directs[snake.curDirect][1];
+
+        // 3. 判断头结点是否出界
+        if (x1 < 0 || x1 >= maxX || y1 < 0 || y1 >= maxY || snake.OnBody(1, x1, y1)) {
+            alert("游戏结束，点击确定重新开始");
+            clearInterval(t);
+            history.go(0);
+        }
+
+        // 4. 判断头结点是否遇上了食物
+        if (x1 == food.x && y1 == food.y) {
+            snake.AddNode(food); // 将食物吃掉
+            food = getNewFood(); // 重新创建食物
+        }
+
+        // 一切都没问题，那么头节点移动到新坐标(x1, y1)上
+        snake.Nodes[0].MoveTo(x1, y1);
+    }
+
+    // 绑定键盘事件，监听上下左右四个方向键，同时修改蛇的移动方向
+    document.onkeydown = function(e) {
+        // 当蛇是向右前进的时候，不允许按下方向左键
+        if (e.keyCode == 37 && snake.curDirect != directRight) {
+            snake.curDirect = directLeft;
+        }
+        if (e.keyCode == 38 && snake.curDirect != directDown) {
+            snake.curDirect = directUp;
+        }
+        if (e.keyCode == 39 && snake.curDirect != directLeft) {
+            snake.curDirect = directRight;
+        }
+        if (e.keyCode == 40 && snake.curDirect != directUp) {
+            snake.curDirect = directDown;
+        }
+    }
+
+    // 启动定时器，让蛇跑起来，游戏开始
+    var t = setInterval(snakeMove, 500);
+</script>
+
+</html>
